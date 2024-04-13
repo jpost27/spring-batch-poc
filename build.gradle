@@ -1,0 +1,68 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.4'
+    id 'io.spring.dependency-management' version '1.1.4'
+    id "io.github.kobylynskyi.graphql.codegen" version "$graphqlCodegenVersion"
+}
+
+group = 'com.jp'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = '17'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+    def lombokVersion = '1.18.28'
+
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+    implementation 'org.springframework.boot:spring-boot-starter'
+
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-data-rest'
+    implementation 'org.springframework.graphql:spring-graphql:1.1.3'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+    implementation "org.springframework.boot:spring-boot-starter-webflux"
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0'
+
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
+    implementation "io.github.kobylynskyi:graphql-java-codegen:$graphqlCodegenVersion"
+
+    runtimeOnly 'com.mysql:mysql-connector-j:8.3.0'
+
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+
+graphqlCodegen {
+    graphqlSchemaPaths = ["src/main/resources/graphql-documents/almanac-schema.graphql"]
+    outputDir = new File("$buildDir/generated")
+    packageName = "com.jp.springbatchpoc.model.client.almanac"
+    modelValidationAnnotation = "org.springframework.lang.NonNull"
+    generateToString = true
+    generateEqualsAndHashCode = true
+    modelNamePrefix = "Almanac"
+
+    apiPackageName = "com.jp.springbatchpoc.client.almanac"
+    apiNamePrefix = "Almanac"
+    generateClient = true
+    responseProjectionMaxDepth = 1
+    apiReturnType = "reactor.core.publisher.Mono"
+}
+
+// Add generated sources to your project source sets:
+sourceSets.main.java.srcDir "$buildDir/generated"
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
