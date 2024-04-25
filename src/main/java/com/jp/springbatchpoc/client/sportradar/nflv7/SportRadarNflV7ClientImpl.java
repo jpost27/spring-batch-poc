@@ -1,5 +1,8 @@
 package com.jp.springbatchpoc.client.sportradar.nflv7;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.jp.springbatchpoc.cache.Cache;
+import com.jp.springbatchpoc.cache.CacheLoader;
 import com.jp.springbatchpoc.model.client.sportradar.nflv7.currentseasonschedule.SrNflV7CurrentSeasonScheduleResponse;
 import com.jp.springbatchpoc.model.client.sportradar.nflv7.currentweekschedule.SrNflV7CurrentWeekScheduleResponse;
 import com.jp.springbatchpoc.model.client.sportradar.nflv7.dailychangelog.SrNflV7DailyChangeLogResponse;
@@ -25,7 +28,6 @@ import com.jp.springbatchpoc.model.client.sportradar.nflv7.weeklydepthcharts.SrN
 import com.jp.springbatchpoc.model.client.sportradar.nflv7.weeklyinjuries.SrNflV7WeeklyInjuriesResponse;
 import com.jp.springbatchpoc.model.client.sportradar.nflv7.weeklyschedule.SrNflV7WeeklyScheduleResponse;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -36,6 +38,7 @@ import reactor.core.publisher.Mono;
 import javax.annotation.processing.Generated;
 import java.lang.reflect.Type;
 import java.net.URI;
+import java.time.Instant;
 
 @Generated("fanduel-model-generator")
 @Component
@@ -53,8 +56,8 @@ public class SportRadarNflV7ClientImpl implements SportRadarNflV7Client {
     private static final String VERSION = "v7";
 
     public SportRadarNflV7ClientImpl(final WebClient webClient,
-                                     @Value("sportrdar.nfl.v7.key") String key,
-                                     @Value("sportrdar.nfl.v7.accessLevel") String accessLevel) {
+                                     @Value("${sportradar.nfl.v7.key}") String key,
+                                     @Value("${sportradar.nfl.v7.accessLevel}") String accessLevel) {
         this.ACCESS_LEVEL = accessLevel;
         this.API_KEY = key;
         this.webClient = webClient;
@@ -265,18 +268,20 @@ public class SportRadarNflV7ClientImpl implements SportRadarNflV7Client {
     }
 
     <T> Mono<T> fetch(URI uri, Class<T> returnType) {
-        return fetch(uri, new ParameterizedTypeReference<>() {
-                    @Override
-                    public Type getType() {
-                        return super.getType();
+        return CacheLoader.loadOrFetchMono(Cache.SR_NFL_RESPONSES, uri.toString(), new TypeReference<>() {
+            public Type getType() { return returnType; }
+        }, (uriString) -> webClient.get()
+                .uri(uri)
+                .retrieve()
+                .bodyToMono(returnType)
+                .mapNotNull(res -> {
+                    if (ACCESS_LEVEL.equalsIgnoreCase("trial")) {
+                        // TODO: Hack delay for trial keys. need to come up with a better solution
+                        Instant start = Instant.now();
+                        while (Instant.now().toEpochMilli() - start.toEpochMilli() < 1500) {
+                        }
                     }
-                });
-    }
-
-    <T> Mono<T> fetch(URI uri, ParameterizedTypeReference<T> returnType) {
-        return webClient.get()
-                        .uri(uri)
-                        .retrieve()
-                        .bodyToMono(returnType);
+                    return res;
+                }));
     }
 }

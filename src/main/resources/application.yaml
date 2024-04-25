@@ -25,28 +25,8 @@ almanac:
     username: ${ALMANAC_API_USERNAME:example}
     password: ${ALMANAC_PASSWORD}
 
-sportrdar:
+sportradar:
   nfl:
     v7:
       key: ${SPORTRADAR_TRIAL_KEY}
       accessLevel: trial
-
-initialization:
-  sportsLeaguesMap:
-    American Football:
-      - abbreviatedName: "NFL"
-        fullName: "National Football League"
-      - abbreviatedName: "NCAAF"
-        fullName: "NCAA Football"
-    Baseball:
-      - abbreviatedName: "MLB"
-        fullName: "Major League Baseball"
-    Basketball:
-      - abbreviatedName: "NBA"
-        fullName: "National Basketball Association"
-      - abbreviatedName: "WNBA"
-        fullName: "Women's National Basketball Association"
-      - abbreviatedName: "NCAAMB"
-        fullName: "NCAA Men's Basketball"
-      - abbreviatedName: "NCAAWB"
-        fullName: "NCAA Women's Basketball"

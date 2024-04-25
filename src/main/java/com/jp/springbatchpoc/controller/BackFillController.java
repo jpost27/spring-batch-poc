@@ -17,13 +17,38 @@ import org.springframework.web.bind.annotation.RestController;
 public class BackFillController {
     private final JobLauncher jobLauncher;
     private final Job sportsLeaguesPopulationJob;
+    private final Job teamsPopulationJob;
+    private final Job competitorsPopulationJob;
 
-    @GetMapping("sports-and-leagues")
+    @GetMapping("all")
+    public void backFillEverything() {
+        backFillSportsAndLeagues();
+        backFillTeams();
+        backFillCompetitors();
+    }
+
+    @GetMapping("enums")
     public void backFillSportsAndLeagues() {
         System.out.println("Starting sportsLeaguesPopulationJob");
+        runJob(sportsLeaguesPopulationJob);
+    }
+
+    @GetMapping("teams")
+    public void backFillTeams() {
+        System.out.println("Starting teamsPopulationJob");
+        runJob(teamsPopulationJob);
+    }
+
+    @GetMapping("competitors")
+    public void backFillCompetitors() {
+        System.out.println("Starting competitorsPopulationJob");
+        runJob(competitorsPopulationJob);
+    }
+
+    private void runJob(Job job) {
         try {
             JobExecution execution = jobLauncher.run(
-                    sportsLeaguesPopulationJob,
+                    job,
                     new JobParameters());
             System.out.println("Job Status : " + execution.getStatus());
             System.out.println("Job completed");

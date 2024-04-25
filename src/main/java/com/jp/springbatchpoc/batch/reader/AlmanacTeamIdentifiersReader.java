@@ -1,7 +1,7 @@
 package com.jp.springbatchpoc.batch.reader;
 
 import com.jp.springbatchpoc.model.dto.TeamIdentifier;
-import com.jp.springbatchpoc.model.enums.LeagueCd;
+import com.jp.springbatchpoc.model.enums.Leagues;
 import com.jp.springbatchpoc.service.TeamIdentifierService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,14 +21,14 @@ public class AlmanacTeamIdentifiersReader implements ItemReader<TeamIdentifier> 
 
     private final TeamIdentifierService teamIdentifierService;
     @NonNull
-    private final LeagueCd leagueCd;
+    private final Leagues leagueCd;
     private Iterator<TeamIdentifier> teamDataIterator;
 
     @Override
     public TeamIdentifier read() {
         if (teamDataIterator == null) {
             Assert.notNull(leagueCd, "leagueCd cannot be null.");
-            final List<TeamIdentifier> teamIdentifiers = teamIdentifierService.allTeamIdentifiersForLeague(LeagueCd.NFL).blockOptional().orElse(List.of());
+            final List<TeamIdentifier> teamIdentifiers = teamIdentifierService.allTeamIdentifiersForLeague(leagueCd).blockOptional().orElse(List.of());
             teamDataIterator = teamIdentifiers.iterator();
         }
         if (teamDataIterator.hasNext()) {

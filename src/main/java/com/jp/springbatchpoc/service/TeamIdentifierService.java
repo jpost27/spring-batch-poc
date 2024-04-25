@@ -8,7 +8,7 @@ import com.jp.springbatchpoc.model.client.almanac.AlmanacProviderIdInput;
 import com.jp.springbatchpoc.model.client.almanac.AlmanacProviderIds;
 import com.jp.springbatchpoc.model.client.almanac.AlmanacTeam;
 import com.jp.springbatchpoc.model.dto.TeamIdentifier;
-import com.jp.springbatchpoc.model.enums.LeagueCd;
+import com.jp.springbatchpoc.model.enums.Leagues;
 import com.jp.springbatchpoc.utils.MapUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +33,7 @@ public class TeamIdentifierService {
 
     private final AlmanacClient almanacClient;
 
-    public Mono<Map<Integer, TeamIdentifier>> fromNumberFireIDs(@NonNull LeagueCd leagueCd, Set<Integer> ids) {
+    public Mono<Map<Integer, TeamIdentifier>> fromNumberFireIDs(@NonNull Leagues leagueCd, Set<Integer> ids) {
         return getTeamIdentifiersFromTeamIDs(
                 AlmanacProvider.NUMBERFIRE, ids.stream().map(id -> toAlmanacNumberFireId(leagueCd, id)))
                 .map(nfIdToTeamMap ->
@@ -62,7 +62,7 @@ public class TeamIdentifierService {
                         (s) -> Optional.ofNullable(s).map(Map.Entry::getKey).map(Long::valueOf)));
     }
 
-    public Mono<List<TeamIdentifier>> allTeamIdentifiersForLeague(@NonNull LeagueCd leagueCd) {
+    public Mono<List<TeamIdentifier>> allTeamIdentifiersForLeague(@NonNull Leagues leagueCd) {
         return getAlmanacCompetition(leagueCd).map(almanacCompetition -> almanacCompetition.getTeams().stream()
                 .map(this::teamIdentifierFromTeam)
                 .toList());
@@ -86,11 +86,11 @@ public class TeamIdentifierService {
                                 .map(AlmanacProviderIdInput::getId)));
     }
 
-    private Mono<AlmanacCompetition> getAlmanacCompetition(LeagueCd leagueCd) {
+    private Mono<AlmanacCompetition> getAlmanacCompetition(Leagues leagueCd) {
         return almanacClient.competition("o:" + leagueCd.getFanDuelCompetitionId());
     }
 
-    private String toAlmanacNumberFireId(@NonNull LeagueCd leagueCd, @NonNull Integer id) {
+    private String toAlmanacNumberFireId(@NonNull Leagues leagueCd, @NonNull Integer id) {
         return leagueCd.toString().toUpperCase() + '_' + id;
     }
 

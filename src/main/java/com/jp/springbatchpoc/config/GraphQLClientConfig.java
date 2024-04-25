@@ -27,10 +27,9 @@ public class GraphQLClientConfig {
     @Value("${almanac.api.password}")
     private String almanacPassword;
 
-    private final ObjectMapper clientObjectMapper;
-
-    public GraphQLClientConfig() {
-        this.clientObjectMapper = JsonMapper.builder()
+    @Bean
+    public ObjectMapper clientObjectMapper() {
+        return JsonMapper.builder()
                 .findAndAddModules()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .addModule(new Jdk8Module())
@@ -38,7 +37,7 @@ public class GraphQLClientConfig {
     }
 
     @Bean
-    public HttpGraphQlClient almanacGraphQlClient() {
+    public HttpGraphQlClient almanacGraphQlClient(ObjectMapper clientObjectMapper) {
         WebClient webClient = WebClient.builder()
                 .baseUrl(almanacBaseUrl + "/graphql")
                 .exchangeStrategies(ExchangeStrategies.builder()

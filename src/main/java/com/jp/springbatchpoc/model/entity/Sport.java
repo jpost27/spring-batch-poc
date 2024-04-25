@@ -8,6 +8,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.List;
@@ -24,6 +26,8 @@ public class Sport implements Serializable {
     private String name;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "sport")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private List<League> leagues;
 
 }

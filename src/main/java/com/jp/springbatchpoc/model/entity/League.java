@@ -3,7 +3,6 @@ package com.jp.springbatchpoc.model.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -13,7 +12,9 @@ import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.List;
 
@@ -35,11 +36,15 @@ public class League {
     @Column(name = "full_name", unique = true, nullable = false)
     private String fullName;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "sport_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Sport sport;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "league")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private List<Team> teams;
 
 }
