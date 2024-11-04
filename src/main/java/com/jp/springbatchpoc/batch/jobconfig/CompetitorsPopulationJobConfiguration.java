@@ -14,6 +14,7 @@ import com.jp.springbatchpoc.service.TeamIdentifierService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -27,6 +28,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Configuration
 public class CompetitorsPopulationJobConfiguration {
 
+    @JobScope
     @Bean(name = "competitorsPopulationStep")
     protected Step competitorsPopulationStep(
             PlatformTransactionManager transactionManager,
@@ -36,23 +38,16 @@ public class CompetitorsPopulationJobConfiguration {
             CompetitorRepository competitorRepository,
             TeamIdentifierService teamIdentifierService,
             TeamProviderIdRepository teamProviderIdRepository,
-            CompetitorProviderIdRepository competitorProviderIdRepository
-    ) {
+            CompetitorProviderIdRepository competitorProviderIdRepository) {
         RepositoryItemWriter<Competitor> itemWriter = new RepositoryItemWriter<>();
         itemWriter.setRepository(competitorRepository);
         return new StepBuilder("competitorsPopulationStep", jobRepository)
-                .<CompetitorIdentifier, Competitor> chunk(5, transactionManager)
+                .<CompetitorIdentifier, Competitor>chunk(5, transactionManager)
                 .allowStartIfComplete(true)
                 .reader(new AlmanacCompetitorIdentifiersReader(
-                        teamIdentifierService,
-                        competitorIdentifierService,
-                        Leagues.NFL
-                ))
+                        teamIdentifierService, competitorIdentifierService, Leagues.NFL))
                 .processor(new NflPlayerIdentifierProcessor(
-                        sportRadarNflV7Client,
-                        teamProviderIdRepository,
-                        competitorProviderIdRepository
-                ))
+                        sportRadarNflV7Client, teamProviderIdRepository, competitorProviderIdRepository))
                 .writer(itemWriter)
                 .build();
     }

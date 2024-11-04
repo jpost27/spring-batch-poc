@@ -9,14 +9,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-
-import java.util.List;
 
 @Data
 @Builder
@@ -45,6 +44,10 @@ public class League {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "league")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private List<Team> teams;
+    private List<Season> seasons;
 
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "league")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<Team> teams;
 }

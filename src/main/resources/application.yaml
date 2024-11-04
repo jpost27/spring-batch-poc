@@ -28,5 +28,5 @@ almanac:
 sportradar:
   nfl:
     v7:
-      key: ${SPORTRADAR_TRIAL_KEY}
-      accessLevel: trial
+      key: ${SPORTRADAR_API_KEY}
+      accessLevel: production

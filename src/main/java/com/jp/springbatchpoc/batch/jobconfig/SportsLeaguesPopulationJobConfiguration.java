@@ -1,7 +1,10 @@
 package com.jp.springbatchpoc.batch.jobconfig;
 
 import com.jp.springbatchpoc.batch.tasklet.EnumsPopulationTasklet;
+import com.jp.springbatchpoc.repository.EventAssociationTypeRepository;
+import com.jp.springbatchpoc.repository.EventStatusRepository;
 import com.jp.springbatchpoc.repository.LeagueRepository;
+import com.jp.springbatchpoc.repository.SeasonTypeRepository;
 import com.jp.springbatchpoc.repository.SportRepository;
 import com.jp.springbatchpoc.repository.TeamAssociationTypeRepository;
 import com.jp.springbatchpoc.repository.TeamColorTypeRepository;
@@ -29,8 +32,10 @@ public class SportsLeaguesPopulationJobConfiguration {
             SportRepository sportsRepository,
             LeagueRepository leagueRepository,
             TeamAssociationTypeRepository teamAssociationTypeRepository,
-            TeamColorTypeRepository teamColorTypeRepository
-            ) {
+            TeamColorTypeRepository teamColorTypeRepository,
+            SeasonTypeRepository seasonTypeRepository,
+            EventStatusRepository eventStatusRepository,
+            EventAssociationTypeRepository eventAssociationTypeRepository) {
         TaskletStep step = new TaskletStep("SportsLeaguesPopulationTasklet");
         step.setAllowStartIfComplete(true);
         step.setJobRepository(jobRepository);
@@ -39,7 +44,10 @@ public class SportsLeaguesPopulationJobConfiguration {
                 sportsRepository,
                 leagueRepository,
                 teamAssociationTypeRepository,
-                teamColorTypeRepository));
+                teamColorTypeRepository,
+                seasonTypeRepository,
+                eventStatusRepository,
+                eventAssociationTypeRepository));
         return step;
     }
 
@@ -49,5 +57,4 @@ public class SportsLeaguesPopulationJobConfiguration {
                 .start(step)
                 .build();
     }
-
 }

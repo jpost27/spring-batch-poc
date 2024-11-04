@@ -2,9 +2,6 @@ package com.jp.springbatchpoc.model.client.sportradar.nflv7.seasonschedule;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.lang.Boolean;
-import java.lang.Integer;
-import java.lang.String;
 import java.util.Optional;
 import javax.annotation.processing.Generated;
 import lombok.EqualsAndHashCode;
@@ -15,12 +12,8 @@ import lombok.experimental.Accessors;
 
 @NoArgsConstructor
 @Setter
-@Accessors(
-        chain = true
-)
-@JsonIgnoreProperties(
-        ignoreUnknown = true
-)
+@Accessors(chain = true)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @EqualsAndHashCode
 @ToString
 @Generated("fanduel-model-generator")
@@ -57,6 +50,9 @@ public class SrNflV7SeasonScheduleGame {
 
     @JsonProperty("sr_id")
     private String srId;
+
+    @JsonProperty("title")
+    private String title;
 
     @JsonProperty("status")
     private String status;
@@ -109,6 +105,10 @@ public class SrNflV7SeasonScheduleGame {
 
     public Optional<String> getSrId() {
         return Optional.ofNullable(srId);
+    }
+
+    public Optional<String> getTitle() {
+        return Optional.ofNullable(title);
     }
 
     public Optional<String> getStatus() {

@@ -11,10 +11,6 @@ import com.jp.springbatchpoc.model.entity.Team;
 import com.jp.springbatchpoc.model.entity.TeamProviderId;
 import com.jp.springbatchpoc.repository.CompetitorProviderIdRepository;
 import com.jp.springbatchpoc.repository.TeamProviderIdRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.item.ItemProcessor;
-
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -22,6 +18,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.item.ItemProcessor;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -40,7 +39,16 @@ public class NflPlayerIdentifierProcessor implements ItemProcessor<CompetitorIde
             return null;
         }
 
-        TeamProviderId teamProviderId = teamProviderIdRepository.findByFanduelTeamId(playerIdentifier.getTeamFanDuelId())
+        if (competitorProviderIdRepository.existsByFanduelCompetitorId(playerIdentifier.getFanDuelId())) {
+            log.warn(
+                    "NFL Competitor already exists. Discarding to avoid duplicates {}:{}",
+                    playerIdentifier.getName(),
+                    playerIdentifier.getSportRadarId());
+            return null;
+        }
+
+        TeamProviderId teamProviderId = teamProviderIdRepository
+                .findByFanduelTeamId(playerIdentifier.getTeamFanDuelId())
                 .orElse(null);
         if (teamProviderId == null) {
             log.warn("No teamProviderId found for fanduelID: {}", playerIdentifier);
@@ -51,25 +59,27 @@ public class NflPlayerIdentifierProcessor implements ItemProcessor<CompetitorIde
 
         Optional<CompetitorProviderId> existingCompetitorProviderId =
                 competitorProviderIdRepository.findBySportradarCompetitorId(playerIdentifier.getSportRadarId());
-        Competitor competitor = existingCompetitorProviderId.map(CompetitorProviderId::getCompetitor)
+        Competitor competitor = existingCompetitorProviderId
+                .map(CompetitorProviderId::getCompetitor)
                 .orElse(new Competitor());
-        if (competitor.getCompetitorId() != null) {
-            log.warn("NFL Competitor already exists. Discarding to avoid duplicates {}:{}", playerIdentifier.getName(), playerIdentifier.getSportRadarId());
-            return null;
-        }
         competitor.setLeague(league);
-        SrNflV7PlayerProfileResponse srPlayerProfile =
-                sportRadarNflV7Client.getPlayerProfile(playerIdentifier.getSportRadarId()).block();
 
-        if (srPlayerProfile == null) {
+        SrNflV7PlayerProfileResponse srPlayerProfile;
+        try {
+            srPlayerProfile = sportRadarNflV7Client
+                    .getPlayerProfile(playerIdentifier.getSportRadarId())
+                    .block();
+        } catch (Exception e) {
             log.warn("Sportradar player profile not found for NFL Competitor {}", playerIdentifier);
+            e.printStackTrace();
             return null;
         }
 
         srPlayerProfile.getFirstName().ifPresent(competitor::setFirstName);
         srPlayerProfile.getLastName().ifPresent(competitor::setLastName);
         srPlayerProfile.getJersey().ifPresent(competitor::setUniformIdentifier);
-        srPlayerProfile.getBirthDate()
+        srPlayerProfile
+                .getBirthDate()
                 .map(date -> {
                     try {
                         return LocalDate.parse(date, dateOfBirthFormatter);
@@ -80,9 +90,7 @@ public class NflPlayerIdentifierProcessor implements ItemProcessor<CompetitorIde
                 })
                 .ifPresent(competitor::setDateOfBirth);
         srPlayerProfile.getHeight().ifPresent(competitor::setHeightInInches);
-        srPlayerProfile.getWeight()
-                .map(Double::intValue)
-                .ifPresent(competitor::setWeightInPounds);
+        srPlayerProfile.getWeight().map(Double::intValue).ifPresent(competitor::setWeightInPounds);
         srPlayerProfile.getCollege().ifPresent(competitor::setCollege);
         srPlayerProfile.getHighSchool().ifPresent(competitor::setHighSchool);
         competitor.setTeam(team);
@@ -93,9 +101,7 @@ public class NflPlayerIdentifierProcessor implements ItemProcessor<CompetitorIde
         competitorProviderIds.setSportradarCompetitorId(playerIdentifier.getSportRadarId());
         competitorProviderIds.setNumberfireCompetitorId(playerIdentifier.getNumberFireId());
         competitorProviderIds.setSportsbookSelectionIds(
-                Optional.ofNullable(playerIdentifier.getSportsbookIds())
-                        .orElse(List.of())
-                        .stream()
+                Optional.ofNullable(playerIdentifier.getSportsbookIds()).orElse(List.of()).stream()
                         .map(id -> {
                             CompetitorSportsbookSelectionId selectionId = new CompetitorSportsbookSelectionId();
                             selectionId.setSelectionId(id);
@@ -106,8 +112,8 @@ public class NflPlayerIdentifierProcessor implements ItemProcessor<CompetitorIde
         competitorProviderIds.setCompetitor(competitor);
         competitor.setCompetitorProviderIds(competitorProviderIds);
 
-//        private InjuryStatus injuryStatus;
-//        private CompetitorStatus competitorStatus;
+        //        private InjuryStatus injuryStatus;
+        //        private CompetitorStatus competitorStatus;
 
         return competitor;
     }

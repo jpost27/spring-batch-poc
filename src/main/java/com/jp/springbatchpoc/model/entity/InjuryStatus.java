@@ -12,9 +12,8 @@ import lombok.experimental.Accessors;
 public class InjuryStatus {
     @Id
     @Column(name = "injury_status_code")
-    public String injuryStatusCode;
+    private String injuryStatusCode;
 
     @Column(name = "description")
-    public String description;
-
+    private String description;
 }

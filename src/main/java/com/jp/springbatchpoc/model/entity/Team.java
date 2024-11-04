@@ -14,11 +14,10 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrimaryKeyJoinColumn;
+import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-
-import java.util.List;
 
 @Data
 @Entity(name = "teams")
@@ -29,7 +28,7 @@ public class Team {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Integer teamId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "league_id", nullable = false)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
@@ -54,7 +53,7 @@ public class Team {
     @PrimaryKeyJoinColumn
     private TeamProviderId teamProviderIds;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "team_team_associations",
             joinColumns = @JoinColumn(name = "team_id"),
@@ -78,5 +77,4 @@ public class Team {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private List<Competitor> competitors;
-
 }
