@@ -7,20 +7,29 @@ import com.jp.springbatchpoc.model.entity.Competitor;
 import com.jp.springbatchpoc.model.entity.CompetitorProviderId;
 import com.jp.springbatchpoc.model.entity.CompetitorSportsbookSelectionId;
 import com.jp.springbatchpoc.model.entity.League;
+import com.jp.springbatchpoc.model.entity.Sport;
+import com.jp.springbatchpoc.model.entity.SportPosition;
 import com.jp.springbatchpoc.model.entity.Team;
 import com.jp.springbatchpoc.model.entity.TeamProviderId;
+import com.jp.springbatchpoc.model.enums.Sports;
 import com.jp.springbatchpoc.repository.CompetitorProviderIdRepository;
+import com.jp.springbatchpoc.repository.SportPositionRepository;
 import com.jp.springbatchpoc.repository.TeamProviderIdRepository;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import com.jp.springbatchpoc.service.SportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.ItemProcessor;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -29,21 +38,22 @@ public class NflPlayerIdentifierProcessor implements ItemProcessor<CompetitorIde
     private final SportRadarNflV7Client sportRadarNflV7Client;
     private final TeamProviderIdRepository teamProviderIdRepository;
     private final CompetitorProviderIdRepository competitorProviderIdRepository;
+    private final SportService sportService;
+    private final SportPositionRepository sportPositionRepository;
     private static final DateTimeFormatter dateOfBirthFormatter =
             DateTimeFormatter.ofPattern("yyyy-MM-dd").withLocale(Locale.US);
+    private final Set<Integer> processedFanDuelIds = new HashSet<>();
 
     @Override
     public Competitor process(CompetitorIdentifier playerIdentifier) throws Exception {
-        if (playerIdentifier.getSportRadarId() == null) {
-            log.warn("No SportRadarId found for NFL Competitor {}", playerIdentifier);
+        if (processedFanDuelIds.contains(playerIdentifier.getFanDuelId())) {
+            log.warn("Duplicate CompetitorIdentifier found for NFL Competitor {}", playerIdentifier);
             return null;
         }
+        processedFanDuelIds.add(playerIdentifier.getFanDuelId());
 
-        if (competitorProviderIdRepository.existsByFanduelCompetitorId(playerIdentifier.getFanDuelId())) {
-            log.warn(
-                    "NFL Competitor already exists. Discarding to avoid duplicates {}:{}",
-                    playerIdentifier.getName(),
-                    playerIdentifier.getSportRadarId());
+        if (playerIdentifier.getSportRadarId() == null) {
+            log.warn("No SportRadarId found for NFL Competitor {}", playerIdentifier);
             return null;
         }
 
@@ -58,7 +68,7 @@ public class NflPlayerIdentifierProcessor implements ItemProcessor<CompetitorIde
         League league = team.getLeague();
 
         Optional<CompetitorProviderId> existingCompetitorProviderId =
-                competitorProviderIdRepository.findBySportradarCompetitorId(playerIdentifier.getSportRadarId());
+                competitorProviderIdRepository.findByFanduelCompetitorId(playerIdentifier.getFanDuelId());
         Competitor competitor = existingCompetitorProviderId
                 .map(CompetitorProviderId::getCompetitor)
                 .orElse(new Competitor());
@@ -96,24 +106,55 @@ public class NflPlayerIdentifierProcessor implements ItemProcessor<CompetitorIde
         competitor.setTeam(team);
 
         // Provider IDs
-        CompetitorProviderId competitorProviderIds = new CompetitorProviderId();
+        CompetitorProviderId competitorProviderIds = existingCompetitorProviderId.orElse(new CompetitorProviderId());
         competitorProviderIds.setFanduelCompetitorId(playerIdentifier.getFanDuelId());
         competitorProviderIds.setSportradarCompetitorId(playerIdentifier.getSportRadarId());
         competitorProviderIds.setNumberfireCompetitorId(playerIdentifier.getNumberFireId());
+        // NOTE: Not currently updating sportsbookSelectionIds
         competitorProviderIds.setSportsbookSelectionIds(
-                Optional.ofNullable(playerIdentifier.getSportsbookIds()).orElse(List.of()).stream()
-                        .map(id -> {
-                            CompetitorSportsbookSelectionId selectionId = new CompetitorSportsbookSelectionId();
-                            selectionId.setSelectionId(id);
-                            selectionId.setCompetitorProviderIds(competitorProviderIds);
-                            return selectionId;
-                        })
-                        .collect(Collectors.toList()));
+                competitorProviderIds.getSportsbookSelectionIds() != null
+                                && !competitorProviderIds
+                                        .getSportsbookSelectionIds()
+                                        .isEmpty()
+                        ? competitorProviderIds.getSportsbookSelectionIds()
+                        : Optional.ofNullable(playerIdentifier.getSportsbookIds()).orElse(List.of()).stream()
+                                .map(id -> {
+                                    CompetitorSportsbookSelectionId selectionId = new CompetitorSportsbookSelectionId();
+                                    selectionId.setSelectionId(id);
+                                    selectionId.setCompetitorProviderIds(competitorProviderIds);
+                                    return selectionId;
+                                })
+                                .collect(Collectors.toList()));
         competitorProviderIds.setCompetitor(competitor);
         competitor.setCompetitorProviderIds(competitorProviderIds);
 
         //        private InjuryStatus injuryStatus;
-        //        private CompetitorStatus competitorStatus;
+        //        private CompetitorStatus competitorStatus
+
+        srPlayerProfile.getPosition().ifPresent(position -> {
+            List<SportPosition> positions =
+                    Optional.ofNullable(competitor.getPositions()).orElse(new ArrayList<>());
+            if (positions.stream().noneMatch(p -> p.getSportPositionCode().equals(position))) {
+                Sport sport = sportService.findAll().stream()
+                        .filter(s -> s.getName().equals(Sports.AMERICAN_FOOTBALL.getSportName()))
+                        .findFirst()
+                        .orElseThrow();
+                List<SportPosition> existingSportPositions = sportPositionRepository.findAll();
+                SportPosition sportPosition = existingSportPositions.stream()
+                        .filter(p -> p.getSportPositionCode().equals(position))
+                        .findFirst()
+                        .orElse(null);
+                if (sportPosition == null) {
+                    sportPosition = new SportPosition();
+                    sportPosition.setSportPositionCode(position);
+                    sportPosition.setSportId(sport.getSportId());
+                    sportPosition.setSport(sport);
+                    sportPosition = sportPositionRepository.save(sportPosition);
+                }
+                positions.add(sportPosition);
+            }
+            competitor.setPositions(positions);
+        });
 
         return competitor;
     }

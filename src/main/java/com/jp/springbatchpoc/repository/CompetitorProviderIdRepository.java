@@ -10,6 +10,8 @@ public interface CompetitorProviderIdRepository extends JPRepository<CompetitorP
 
     Optional<CompetitorProviderId> findBySportradarCompetitorId(String sportradarCompetitorId);
 
+    Optional<CompetitorProviderId> findByFanduelCompetitorId(Integer sportradarCompetitorId);
+
     boolean existsBySportradarCompetitorId(String sportradarCompetitorId);
 
     boolean existsByFanduelCompetitorId(Integer fanduelCompetitorId);

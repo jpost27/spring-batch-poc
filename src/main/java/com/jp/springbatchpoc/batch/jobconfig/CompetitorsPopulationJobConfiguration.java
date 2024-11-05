@@ -8,8 +8,10 @@ import com.jp.springbatchpoc.model.entity.Competitor;
 import com.jp.springbatchpoc.model.enums.Leagues;
 import com.jp.springbatchpoc.repository.CompetitorProviderIdRepository;
 import com.jp.springbatchpoc.repository.CompetitorRepository;
+import com.jp.springbatchpoc.repository.SportPositionRepository;
 import com.jp.springbatchpoc.repository.TeamProviderIdRepository;
 import com.jp.springbatchpoc.service.CompetitorIdentifierService;
+import com.jp.springbatchpoc.service.SportService;
 import com.jp.springbatchpoc.service.TeamIdentifierService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -38,7 +40,9 @@ public class CompetitorsPopulationJobConfiguration {
             CompetitorRepository competitorRepository,
             TeamIdentifierService teamIdentifierService,
             TeamProviderIdRepository teamProviderIdRepository,
-            CompetitorProviderIdRepository competitorProviderIdRepository) {
+            CompetitorProviderIdRepository competitorProviderIdRepository,
+            SportService sportService,
+            SportPositionRepository sportPositionRepository) {
         RepositoryItemWriter<Competitor> itemWriter = new RepositoryItemWriter<>();
         itemWriter.setRepository(competitorRepository);
         return new StepBuilder("competitorsPopulationStep", jobRepository)
@@ -47,7 +51,11 @@ public class CompetitorsPopulationJobConfiguration {
                 .reader(new AlmanacCompetitorIdentifiersReader(
                         teamIdentifierService, competitorIdentifierService, Leagues.NFL))
                 .processor(new NflPlayerIdentifierProcessor(
-                        sportRadarNflV7Client, teamProviderIdRepository, competitorProviderIdRepository))
+                        sportRadarNflV7Client,
+                        teamProviderIdRepository,
+                        competitorProviderIdRepository,
+                        sportService,
+                        sportPositionRepository))
                 .writer(itemWriter)
                 .build();
     }
